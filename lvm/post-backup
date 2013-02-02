@@ -1,0 +1,25 @@
+#!/bin/bash
+mountpoint="/mnt/backup/"
+devicedir="/dev/cryptpool/"
+echo "$1" | grep -q "$mountpoint"
+if [ $? -ne 0 ] ; then
+	exit 0
+fi
+orig=$(echo "$1" | sed -e 's:^'$mountpoint'::' -e 's:/$::')
+full=$(echo "$1" | sed 's:/$::')
+if [ "$full" != "$mountpoint$orig" ];
+then
+	echo "Error!"
+	exit 1
+fi
+umount "$full"
+sleep 1
+# LVM is faulty, no lvremove
+# change this once lvm works correctly!
+lvremove -f "$devicedir$orig"backup
+#if [ $? -ne 0 ] ; then
+#	sleep 5
+#	lvremove -f "$devicedir$orig"backup
+#fi
+exit 0
+	

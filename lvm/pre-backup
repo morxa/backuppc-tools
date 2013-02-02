@@ -1,0 +1,40 @@
+#!/bin/bash
+mountpoint="/mnt/backup/" # mount point of backup lv
+devicedir="/dev/cryptpool/" # path to original vg
+echo "$1" | grep -q "$mountpoint"
+if [ $? -ne 0 ] ; then
+	exit 0
+fi
+
+orig=$(echo "$1" | sed -e 's:^'$mountpoint'::' -e 's:/$::') # original lv name (e.g. homelv)
+full=$(echo "$1" | sed 's:/$::') # full path to backup lv mount point (e.g. /mnt/backup/homelv)
+backuplv="${orig}backup"
+backupdevice="$devicedir$backuplv" # full path of backup device (e.g. /dev/cryptpool/homelvbackup)
+#echo "orig: $orig"
+#echo "full: $full"
+#echo "backuppdevice: $backupdevice"
+if [ "$full" != "$mountpoint$orig" ];
+then
+	echo "Error parsing backup path. Exit."
+	exit 1
+fi
+
+# check if device is already mounted
+df | grep -q "${backuplv}.*\?$full"
+if [ $? -eq 0 ] ; then
+	echo "$backupdevice exists and is mounted to $full. Nothing to do."
+	exit 0
+fi
+
+# check if device exists
+lvdisplay $backupdevice
+if [ $? -ne 0 ] ; then
+	lvcreate -n "$orig"backup -s "$devicedir$orig" -l 100%FREE
+	retlv=$?
+	if [ $retlv -ne 0 ]; then
+		echo "Error creating logical volume. return value: $retlv"
+		exit $retlv
+	fi
+fi
+mkdir -p $full
+mount -o ro $backupdevice $full

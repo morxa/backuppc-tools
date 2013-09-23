@@ -1,0 +1,12 @@
+#!/bin/bash
+backupsv="$2"
+mountpoint=$(echo $1 | sed "s:$backupsv/\?::")
+fs=$(df -T $mountpoint | tail -n +2 | awk {'print $2'})
+if [ $fs != "btrfs" ] ; then
+  exit 0
+fi
+
+btrfs subvolume delete $1
+if [ $? -ne 0 ] ; then
+  return $?
+fi

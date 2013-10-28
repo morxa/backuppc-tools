@@ -14,5 +14,5 @@ fi
 
 btrfs subvolume snapshot -r $mountpoint $1
 if [ $? -ne 0 ] ; then
-  return $?
+  exit $?
 fi
